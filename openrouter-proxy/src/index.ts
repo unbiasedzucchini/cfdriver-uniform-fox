@@ -9,6 +9,24 @@ interface RequestBody {
 	prompt: string;
 }
 
+interface OpenRouterResponse {
+	id?: string;
+	provider?: string;
+	model?: string;
+	choices?: Array<{
+		finish_reason?: string;
+		message?: {
+			content?: string;
+		};
+	}>;
+	usage?: {
+		prompt_tokens?: number;
+		completion_tokens?: number;
+		total_tokens?: number;
+		cost?: number;
+	};
+}
+
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		// Handle CORS preflight
@@ -39,6 +57,23 @@ export default {
 				);
 			}
 
+			// Ensure responses table exists
+			await env.DB.prepare(`CREATE TABLE IF NOT EXISTS responses (
+				id TEXT PRIMARY KEY,
+				request_id TEXT NOT NULL,
+				response_id TEXT,
+				provider TEXT,
+				model TEXT,
+				content TEXT,
+				finish_reason TEXT,
+				prompt_tokens INTEGER,
+				completion_tokens INTEGER,
+				total_tokens INTEGER,
+				cost REAL,
+				created_at TEXT DEFAULT (datetime('now')),
+				raw_response TEXT
+			)`).run();
+
 			// Log request to D1
 			const requestId = crypto.randomUUID();
 			await env.DB.prepare(
@@ -64,7 +99,28 @@ export default {
 				}),
 			});
 
-			const result = await openrouterResponse.json();
+			const result: OpenRouterResponse = await openrouterResponse.json();
+
+			// Log response to D1
+			const responseId = crypto.randomUUID();
+			const choice = result.choices?.[0];
+			await env.DB.prepare(
+				`INSERT INTO responses (id, request_id, response_id, provider, model, content, finish_reason, prompt_tokens, completion_tokens, total_tokens, cost, raw_response)
+				 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+			).bind(
+				responseId,
+				requestId,
+				result.id || null,
+				result.provider || null,
+				result.model || null,
+				choice?.message?.content || null,
+				choice?.finish_reason || null,
+				result.usage?.prompt_tokens || null,
+				result.usage?.completion_tokens || null,
+				result.usage?.total_tokens || null,
+				result.usage?.cost || null,
+				JSON.stringify(result)
+			).run();
 
 			return new Response(JSON.stringify(result), {
 				status: openrouterResponse.status,
