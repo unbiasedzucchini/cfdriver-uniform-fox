@@ -1,5 +1,6 @@
 interface Env {
 	OPENROUTER_API_KEY: string;
+	DB: D1Database;
 }
 
 interface RequestBody {
@@ -37,6 +38,12 @@ export default {
 					{ status: 400, headers: { 'Content-Type': 'application/json' } }
 				);
 			}
+
+			// Log request to D1
+			const requestId = crypto.randomUUID();
+			await env.DB.prepare(
+				'INSERT INTO requests (id, model, system_prompt, prompt) VALUES (?, ?, ?, ?)'
+			).bind(requestId, body.model, body.system_prompt || null, body.prompt).run();
 
 			const messages: Array<{ role: string; content: string }> = [];
 
