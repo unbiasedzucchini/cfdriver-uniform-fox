@@ -1,0 +1,18 @@
+{
+  "name": "assemblyscript-compiler-worker",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker that compiles AssemblyScript to WebAssembly",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "build": "echo 'No build step needed'"
+  },
+  "devDependencies": {
+    "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
+    "@esbuild-plugins/node-modules-polyfill": "^0.2.2",
+    "assemblyscript": "^0.28.9",
+    "esbuild": "^0.27.2",
+    "wrangler": "^4.59.1"
+  }
+}

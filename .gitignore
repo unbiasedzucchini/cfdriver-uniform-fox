@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+.wrangler/
+
+# Lock files
+package-lock.json
+
+# Editor
+.vscode/
+
+# Environment
+.env*
+.dev.vars*
+
+# Generated/binary
+*.wasm
